@@ -39,7 +39,37 @@ class Glossary:
             pattern = re.compile(rf"\b{re.escape(source)}\b", re.IGNORECASE)
             if pattern.search(text):
                 matched.append((source, target))
-        return matched
+
+        to_remove: set[str] = set()
+        for source_i, _ in matched:
+            for source_j, _ in matched:
+                if source_i == source_j:
+                    continue
+                substring_pattern = re.compile(rf"\b{re.escape(source_i)}\b", re.IGNORECASE)
+                if not substring_pattern.search(source_j):
+                    continue
+
+                all_matches_i = list(substring_pattern.finditer(text))
+                all_matches_j = list(re.compile(rf"\b{re.escape(source_j)}\b", re.IGNORECASE).finditer(text))
+                j_spans: set[tuple[int, int]] = {(m.start(), m.end()) for m in all_matches_j}
+
+                all_contained: bool = True
+                for match_i in all_matches_i:
+                    i_start, i_end = match_i.start(), match_i.end()
+                    is_contained: bool = False
+                    for j_start, j_end in j_spans:
+                        if j_start <= i_start and i_end <= j_end:
+                            is_contained = True
+                            break
+                    if not is_contained:
+                        all_contained = False
+                        break
+
+                if all_contained:
+                    to_remove.add(source_i)
+                    break
+
+        return [(s, t) for s, t in matched if s not in to_remove]
 
 
 def build_prompt(text: str, context: Sequence[str], entries: Sequence[tuple[str, str]]) -> str:

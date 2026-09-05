@@ -75,3 +75,24 @@ def test_prompt_without_context_omits_the_context_block() -> None:
     prompt = build_prompt("We should go.", context=[], entries=[])
 
     assert "ПОПЕРЕДНІ РЕПЛІКИ" not in prompt
+
+
+def test_overlapping_entries_keeps_longest_match(tmp_path: Path) -> None:
+    glossary = Glossary.load(write(tmp_path, "Scar\tШрам\nScar of Dawn\tШрам Світанку\n"))
+
+    assert glossary.entries_for("Scar of Dawn is here.") == [("Scar of Dawn", "Шрам Світанку")]
+
+
+def test_overlapping_entries_keeps_short_when_alone(tmp_path: Path) -> None:
+    glossary = Glossary.load(write(tmp_path, "Scar\tШрам\nScar of Dawn\tШрам Світанку\n"))
+
+    assert glossary.entries_for("The Scar is deep.") == [("Scar", "Шрам")]
+
+
+def test_overlapping_entries_both_present_as_separate_mentions(tmp_path: Path) -> None:
+    glossary = Glossary.load(write(tmp_path, "Scar\tШрам\nScar of Dawn\tШрам Світанку\n"))
+
+    assert glossary.entries_for("Scar of Dawn and a small Scar.") == [
+        ("Scar", "Шрам"),
+        ("Scar of Dawn", "Шрам Світанку"),
+    ]
