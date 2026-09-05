@@ -1,0 +1,19 @@
+[project]
+name = "wuwa-ua"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["numpy", "pytesseract", "requests"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+wuwa-ua = "wuwa_ua.cli:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
