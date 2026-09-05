@@ -7,9 +7,10 @@ SIGNATURE_WIDTH = 64
 
 
 class ChangeDetector:
-    def __init__(self, change_threshold: float = 3.0, stable_frames: int = 2) -> None:
+    def __init__(self, change_threshold: float = 3.0, stable_frames: int = 2, identical_threshold: float = 1.0) -> None:
         self._change_threshold = change_threshold
         self._stable_frames = max(1, stable_frames)
+        self._identical_threshold = identical_threshold
         self._emitted: np.ndarray | None = None
         self._pending: np.ndarray | None = None
         self._stable_count = 0
@@ -22,7 +23,7 @@ class ChangeDetector:
     def push(self, crop: np.ndarray) -> np.ndarray | None:
         signature = self._signature(crop)
 
-        if self._emitted is not None and self._distance(signature, self._emitted) <= self._change_threshold:
+        if self._emitted is not None and self._distance(signature, self._emitted) <= self._identical_threshold:
             self._pending = None
             self._stable_count = 0
             return None

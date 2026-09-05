@@ -73,3 +73,24 @@ def test_reset_clears_emitted_state() -> None:
 
     assert detector.push(solid(10)) is None
     assert detector.push(solid(10)) is not None
+
+
+def test_slightly_different_frame_exceeding_identical_threshold_is_emitted() -> None:
+    detector = ChangeDetector(change_threshold=3.0, stable_frames=2, identical_threshold=1.0)
+    detector.push(solid(100))
+    detector.push(solid(100))
+
+    assert detector.push(solid(102)) is None
+    emitted = detector.push(solid(102))
+
+    assert emitted is not None
+    assert int(emitted.mean()) == 102
+
+
+def test_custom_identical_threshold_is_honoured() -> None:
+    detector = ChangeDetector(change_threshold=3.0, stable_frames=2, identical_threshold=5.0)
+    detector.push(solid(100))
+    detector.push(solid(100))
+
+    assert detector.push(solid(102)) is None
+    assert detector.push(solid(102)) is None
