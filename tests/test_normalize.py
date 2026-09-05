@@ -27,6 +27,15 @@ def test_drops_control_characters() -> None:
     assert normalize("Clear\x00 sky\x07") == "Clear sky"
 
 
+def test_bare_carriage_return_becomes_a_space() -> None:
+    assert normalize("Clear\rsky") == "Clear sky"
+
+
+def test_dash_at_a_line_break_is_not_treated_as_a_hyphenated_word() -> None:
+    input_str = "It was late " + chr(0x2014) + " \nand cold"
+    assert normalize(input_str) == "It was late - and cold"
+
+
 def test_empty_text_is_not_meaningful() -> None:
     assert is_meaningful("") is False
     assert is_meaningful("   ") is False
