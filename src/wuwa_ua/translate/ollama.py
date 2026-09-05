@@ -30,9 +30,16 @@ class OllamaTranslator:
         try:
             response = requests.post(f"{self._host}/api/generate", json=payload, timeout=self._timeout)
             response.raise_for_status()
-            raw = str(response.json().get("response", ""))
+            body = response.json()
         except (requests.RequestException, ValueError) as exc:
             raise TranslationUnavailable(str(exc)) from exc
+
+        if not isinstance(body, dict):
+            raise TranslationUnavailable(f"invalid JSON body: not a dict, got {type(body).__name__}")
+
+        raw = body.get("response", "")
+        if not isinstance(raw, str):
+            raise TranslationUnavailable(f"invalid response value: not a string, got {type(raw).__name__}")
 
         cleaned = self._clean(raw)
         if not cleaned:

@@ -114,3 +114,76 @@ def test_request_carries_model_prompt_and_timeout(monkeypatch: pytest.MonkeyPatc
     assert "Мандрівник" in captured["json"]["prompt"]
     assert "Not yet." in captured["json"]["prompt"]
     assert captured["timeout"] == 2.5
+
+
+def test_json_body_is_null_raises_translation_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    class NullResponse:
+        status_code = 200
+
+        def json(self) -> None:
+            return None
+
+        def raise_for_status(self) -> None:
+            pass
+
+    def fake_post(url: str, json: dict[str, Any], timeout: float) -> NullResponse:
+        return NullResponse()
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    translator = OllamaTranslator(model="test", host="http://x", timeout=1.0)
+
+    with pytest.raises(TranslationUnavailable):
+        translator.translate("We should go.", context=[], entries=[])
+
+
+def test_json_body_is_array_raises_translation_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    class ArrayResponse:
+        status_code = 200
+
+        def json(self) -> list[str]:
+            return ["item1", "item2"]
+
+        def raise_for_status(self) -> None:
+            pass
+
+    def fake_post(url: str, json: dict[str, Any], timeout: float) -> ArrayResponse:
+        return ArrayResponse()
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    translator = OllamaTranslator(model="test", host="http://x", timeout=1.0)
+
+    with pytest.raises(TranslationUnavailable):
+        translator.translate("We should go.", context=[], entries=[])
+
+
+def test_response_value_is_none_raises_translation_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_post(url: str, json: dict[str, Any], timeout: float) -> FakeResponse:
+        return FakeResponse({"response": None})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    translator = OllamaTranslator(model="test", host="http://x", timeout=1.0)
+
+    with pytest.raises(TranslationUnavailable):
+        translator.translate("We should go.", context=[], entries=[])
+
+
+def test_response_value_is_number_raises_translation_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_post(url: str, json: dict[str, Any], timeout: float) -> FakeResponse:
+        return FakeResponse({"response": 42})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    translator = OllamaTranslator(model="test", host="http://x", timeout=1.0)
+
+    with pytest.raises(TranslationUnavailable):
+        translator.translate("We should go.", context=[], entries=[])
+
+
+def test_response_value_is_dict_raises_translation_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_post(url: str, json: dict[str, Any], timeout: float) -> FakeResponse:
+        return FakeResponse({"response": {"x": 1}})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    translator = OllamaTranslator(model="test", host="http://x", timeout=1.0)
+
+    with pytest.raises(TranslationUnavailable):
+        translator.translate("We should go.", context=[], entries=[])
