@@ -1,13 +1,20 @@
 # ім'я мовця (як його показує гра)	стать: f або m
+#
+# Резонатори — з інфобоксів вікі (поле gender), дані надійні.
+# NPC — з ручного списку; вікі стать для NPC не веде.
+# Невідомих мовців система дописує у speakers-unknown.tsv.
+
 # Персонаж гравця
 Jeqoner	f
 Rover	f
+
 # Резонатори
 Aalto	m
-Aemeath	m
+Aemeath	f
 Augusta	f
 Baizhi	f
 Brant	m
+Buling	f
 Calcharo	m
 Camellya	f
 Cantarella	f
@@ -22,30 +29,30 @@ Denia	f
 Encore	f
 Galbrena	f
 Hiyuki	f
+Hsin	f
 Iuno	f
 Jianxin	f
 Jingran	m
 Jinhsi	f
 Jiyan	m
 Lingyang	m
-Lucy	f
 Lucilla	f
-Luuk Herssen	m
+Lucy	f
 Lumi	f
-Lupa	f
+Luuk Herssen	m
 Lynae	f
 Mornye	f
 Mortefi	m
 Phoebe	f
-Phrolova	f
 Qingxiao	f
-Qiuyuan	f
+Qiuyuan	m
 Rebecca	f
 Roccia	f
 Sanhua	f
 Shorekeeper	f
 Sigrika	f
 Suisui	f
+Suoming	f
 Taoqi	f
 Verina	f
 Xiangli Yao	m
@@ -55,10 +62,51 @@ Youhu	f
 Yuanwu	m
 Zani	f
 Zhezhi	f
-# NPC, що траплялись у діалогах
-Young Artisan	m
-Mengbo	f
-Qiuhong	f
-Zouma	m
-Wuxie	m
+
+# NPC
+Abby	m
+Ada	f
+Adalbert	m
+Agatha	f
+Alberto Montelli	m
+Aleph-1	m
+Alexandro	m
+Alice	f
+Aluna	f
+Amedeo	m
+Anastasia	f
+Andrius	m
+Anran	f
+Arin	f
+Ariosto	m
+Awei	m
+Beatrix	f
+Boccaccio	m
+Chenpi	m
+Fuyan	m
+Geshu Lin	m
+Huaijin	m
+Jinyue	f
 Jue	f
+Koko	f
+Maqi	f
+Mengbo	f
+Panhua	m
+Qinghe	m
+Qiuhong	f
+Scar	m
+Shengmao	m
+Shilang	m
+Siqi	f
+Tang Manliu	m
+Uncle Wei	m
+Wuxie	m
+Xianchen	m
+Xiaobao	m
+Xiaoyu	f
+Xiulan	f
+Yhan	m
+Young Artisan	m
+Yuni	f
+Zhiqiu	f
+Zouma	m
