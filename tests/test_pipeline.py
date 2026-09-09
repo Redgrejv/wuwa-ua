@@ -98,11 +98,23 @@ def make_config(tmp_path: Path) -> Config:
     )
 
 
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
 def make_pipeline(
     tmp_path: Path,
     ocr: FakeOcr,
     translator: FakeTranslator,
     display: FakeDisplay,
+    clock: FakeClock | None = None,
 ) -> Pipeline:
     return Pipeline(
         config=make_config(tmp_path),
@@ -113,6 +125,7 @@ def make_pipeline(
         glossary=Glossary.load(tmp_path / "missing.tsv"),
         display=display,
         history_path=tmp_path / "history.jsonl",
+        clock=clock,
     )
 
 
@@ -276,12 +289,15 @@ def test_unknown_command_is_reported(tmp_path: Path) -> None:
 
 
 def test_overlay_is_cleared_once_the_dialogue_ends(tmp_path: Path) -> None:
+    clock = FakeClock()
     display = FakeDisplay()
     ocr = FakeOcr([OcrResult("We should go.", 90.0)] + [OcrResult("", 0.0)] * 10)
-    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display)
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
 
-    for _ in range(8):
-        pipeline.process(blank())
+    pipeline.process(blank())
+    pipeline.process(blank())
+    clock.advance(2.0)
+    pipeline.tick()
 
     assert display.clears == 1
 
@@ -298,27 +314,33 @@ def test_a_short_gap_does_not_clear_the_overlay(tmp_path: Path) -> None:
 
 
 def test_the_overlay_is_not_cleared_again_while_it_stays_empty(tmp_path: Path) -> None:
+    clock = FakeClock()
     display = FakeDisplay()
     ocr = FakeOcr([OcrResult("We should go.", 90.0)] + [OcrResult("", 0.0)] * 30)
-    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display)
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
 
-    for _ in range(25):
-        pipeline.process(blank())
+    pipeline.process(blank())
+    pipeline.process(blank())
+    for _ in range(20):
+        clock.advance(2.0)
+        pipeline.tick()
 
     assert display.clears == 1
 
 
 def test_the_same_line_shows_again_after_a_clear(tmp_path: Path) -> None:
+    clock = FakeClock()
     display = FakeDisplay()
     ocr = FakeOcr(
-        [OcrResult("We should go.", 90.0)]
-        + [OcrResult("", 0.0)] * 8
-        + [OcrResult("We should go.", 90.0)]
+        [OcrResult("We should go.", 90.0), OcrResult("", 0.0), OcrResult("We should go.", 90.0)]
     )
-    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display)
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
 
-    for _ in range(10):
-        pipeline.process(blank())
+    pipeline.process(blank())
+    pipeline.process(blank())
+    clock.advance(2.0)
+    pipeline.tick()
+    pipeline.process(blank())
 
     assert display.clears == 1
     assert len(display.shown) == 2
@@ -367,10 +389,9 @@ def test_toggle_hides_then_lets_the_line_come_back(tmp_path: Path) -> None:
 def test_a_line_that_flickers_back_is_shown_but_logged_once(tmp_path: Path) -> None:
     display = FakeDisplay()
     history = tmp_path / "history.jsonl"
+    clock = FakeClock()
     ocr = FakeOcr(
-        [OcrResult("We should go.", 90.0)]
-        + [OcrResult("", 0.0)] * 8
-        + [OcrResult("We should go.", 90.0)]
+        [OcrResult("We should go.", 90.0), OcrResult("", 0.0), OcrResult("We should go.", 90.0)]
     )
     pipeline = Pipeline(
         config=make_config(tmp_path),
@@ -381,10 +402,14 @@ def test_a_line_that_flickers_back_is_shown_but_logged_once(tmp_path: Path) -> N
         glossary=Glossary.load(tmp_path / "missing.tsv"),
         display=display,
         history_path=history,
+        clock=clock,
     )
 
-    for _ in range(10):
-        pipeline.process(blank())
+    pipeline.process(blank())
+    pipeline.process(blank())
+    clock.advance(2.0)
+    pipeline.tick()
+    pipeline.process(blank())
 
     assert len(display.shown) == 2
     assert history.read_text(encoding="utf-8").count("We should go.") == 1
@@ -442,12 +467,15 @@ def test_resume_without_anything_shown_shows_nothing(tmp_path: Path) -> None:
 
 
 def test_a_line_cleared_by_the_dialogue_ending_is_not_restored(tmp_path: Path) -> None:
+    clock = FakeClock()
     display = FakeDisplay()
     ocr = FakeOcr([OcrResult("We should go.", 90.0)] + [OcrResult("", 0.0)] * 10)
-    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display)
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
 
-    for _ in range(8):
-        pipeline.process(blank())
+    pipeline.process(blank())
+    pipeline.process(blank())
+    clock.advance(2.0)
+    pipeline.tick()
 
     pipeline.handle_command("toggle")
     pipeline.handle_command("toggle")
@@ -676,3 +704,63 @@ def test_speaker_is_recognised_while_the_line_is_translating(tmp_path: Path) -> 
 
     assert line.translation == "Я втомилася."
     assert order == ["translate", "speaker-done"] or order == ["speaker-done", "translate"]
+
+
+def test_overlay_clears_even_when_the_detector_stays_quiet(tmp_path: Path) -> None:
+    clock = FakeClock()
+    display = FakeDisplay()
+    ocr = FakeOcr([OcrResult("We should go.", 90.0), OcrResult("", 0.0)])
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
+
+    pipeline.process(blank())
+    pipeline.process(blank())
+
+    assert display.clears == 0
+
+    clock.advance(2.0)
+    pipeline.tick()
+
+    assert display.clears == 1
+
+
+def test_a_short_silence_does_not_clear(tmp_path: Path) -> None:
+    clock = FakeClock()
+    display = FakeDisplay()
+    ocr = FakeOcr([OcrResult("We should go.", 90.0), OcrResult("", 0.0)])
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
+
+    pipeline.process(blank())
+    pipeline.process(blank())
+    clock.advance(0.5)
+    pipeline.tick()
+
+    assert display.clears == 0
+
+
+def test_a_new_line_cancels_the_pending_clear(tmp_path: Path) -> None:
+    clock = FakeClock()
+    display = FakeDisplay()
+    ocr = FakeOcr([OcrResult("First.", 90.0), OcrResult("", 0.0), OcrResult("Second.", 90.0)])
+    pipeline = make_pipeline(tmp_path, ocr, FakeTranslator(), display, clock)
+
+    pipeline.process(blank())
+    pipeline.process(blank())
+    clock.advance(1.0)
+    pipeline.process(blank())
+    clock.advance(1.0)
+    pipeline.tick()
+
+    assert display.clears == 0
+
+
+def test_tick_does_nothing_when_nothing_is_shown(tmp_path: Path) -> None:
+    clock = FakeClock()
+    display = FakeDisplay()
+    pipeline = make_pipeline(
+        tmp_path, FakeOcr([OcrResult("", 0.0)]), FakeTranslator(), display, clock
+    )
+
+    clock.advance(10.0)
+    pipeline.tick()
+
+    assert display.clears == 0

@@ -31,6 +31,7 @@ class Pipeline:
         glossary: Any,
         display: Any,
         history_path: Path = DEFAULT_HISTORY_PATH,
+        clock: Any = None,
         speakers: Any = None,
         morph: Any = None,
         speaker_region: Region | None = None,
@@ -44,6 +45,7 @@ class Pipeline:
         self._glossary = glossary
         self._display = display
         self._history_path = history_path
+        self._clock = clock or time.monotonic
         self._speakers = speakers
         self._morph = morph
         self._speaker_region = speaker_region
@@ -52,12 +54,11 @@ class Pipeline:
         self._paused = False
         self._last_key = ""
         self._last_logged_key = ""
-        self._empty_samples = 0
+        self._empty_since: float | None = None
         self._showing = False
         self._frame: np.ndarray | None = None
         self._last_line: SubtitleLine | None = None
         self._speaker_pool = ThreadPoolExecutor(max_workers=1)
-        self._clear_after_samples = max(1, round(config.clear_after * config.sample_fps))
         self.context: deque[str] = deque(maxlen=config.context_lines)
 
     def handle_command(self, command: str) -> str:
@@ -88,7 +89,7 @@ class Pipeline:
             self._note_empty()
             return None
 
-        self._empty_samples = 0
+        self._empty_since: float | None = None
         source = result.text
         key = cache_key(source)
         if key == self._last_key:
@@ -128,6 +129,8 @@ class Pipeline:
             candidate = self._detector.push(crop(frame.image, self._config.region))
             if candidate is not None:
                 self.process(candidate)
+            else:
+                self.tick()
 
     def _gendered(self, translation: str, pending: Future[str]) -> str:
         try:
@@ -176,14 +179,20 @@ class Pipeline:
     def _note_empty(self) -> None:
         if not self._showing:
             return
-        self._empty_samples += 1
-        if self._empty_samples >= self._clear_after_samples:
+        if self._empty_since is None:
+            self._empty_since = self._clock()
+        self.tick()
+
+    def tick(self) -> None:
+        if not self._showing or self._empty_since is None:
+            return
+        if self._clock() - self._empty_since >= self._config.clear_after:
             self._hide()
 
     def _hide(self, keep_last: bool = False) -> None:
         self._display.clear()
         self._showing = False
-        self._empty_samples = 0
+        self._empty_since: float | None = None
         self._last_key = ""
         if not keep_last:
             self._frame = None
