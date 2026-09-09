@@ -55,3 +55,18 @@ def test_real_sentence_is_meaningful() -> None:
 
 def test_cache_key_ignores_case_and_spacing() -> None:
     assert cache_key("  We SHOULD  go. ") == cache_key("we should go.")
+
+def test_lone_pipe_between_words_becomes_capital_i() -> None:
+    assert normalize("If | had no need to sit") == "If I had no need to sit"
+
+
+def test_lone_pipe_at_the_start_becomes_capital_i() -> None:
+    assert normalize("| never asked for help") == "I never asked for help"
+
+
+def test_pipe_inside_a_word_is_left_alone() -> None:
+    assert normalize("HP|MP bar") == "HP|MP bar"
+
+
+def test_apostrophe_contraction_after_pipe_is_fixed() -> None:
+    assert normalize("|'ll be waiting") == "I'll be waiting"

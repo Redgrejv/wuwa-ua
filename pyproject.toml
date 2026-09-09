@@ -2,7 +2,7 @@
 name = "wuwa-ua"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["numpy", "pytesseract", "requests"]
+dependencies = ["ctranslate2", "numpy", "pytesseract", "python-xlib", "requests", "sentencepiece"]
 
 [project.optional-dependencies]
 dev = ["pytest"]

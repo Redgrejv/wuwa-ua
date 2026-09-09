@@ -19,6 +19,7 @@ DASHES = {
     '—': '-',
 }
 
+LONE_PIPE = re.compile(r"(?<![^\s(\"'])\|(?=[\s.,!?;:]|'[a-z]|$)")
 HYPHEN_BREAK = re.compile(r"-\s*\n\s*")
 WHITESPACE = re.compile(r"\s+")
 KEPT_CONTROLS = "\n\t\r"
@@ -29,6 +30,7 @@ MIN_LETTER_RATIO = 0.5
 def normalize(text: str) -> str:
     for source, target in REPLACEMENTS.items():
         text = text.replace(source, target)
+    text = LONE_PIPE.sub("I", text)
     text = HYPHEN_BREAK.sub("", text)
     for source, target in DASHES.items():
         text = text.replace(source, target)
