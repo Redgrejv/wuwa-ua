@@ -26,6 +26,7 @@ from wuwa_ua.paths import (
     GLOSSARY_PATH,
     HISTORY_PATH,
     SPEAKERS_PATH,
+    UNKNOWN_SPEAKERS_PATH,
     control_endpoint,
 )
 
@@ -141,7 +142,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         cache=TranslationCache(CACHE_PATH),
         glossary=Glossary.load(GLOSSARY_PATH),
         display=display,
-        speakers=Speakers.load(SPEAKERS_PATH),
+        speakers=Speakers.load(SPEAKERS_PATH, unknown_log=UNKNOWN_SPEAKERS_PATH),
         morph=build_morph(),
         speaker_region=Region(
             monitor=config.region.monitor,

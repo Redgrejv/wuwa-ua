@@ -60,6 +60,7 @@ def control_endpoint(
 CONFIG_PATH = config_dir() / "config.toml"
 GLOSSARY_PATH = config_dir() / "glossary.tsv"
 SPEAKERS_PATH = config_dir() / "speakers.tsv"
+UNKNOWN_SPEAKERS_PATH = config_dir() / "speakers-unknown.tsv"
 CACHE_PATH = data_dir() / "cache.sqlite"
 HISTORY_PATH = data_dir() / "history.jsonl"
 MODELS_PATH = data_dir() / "models"

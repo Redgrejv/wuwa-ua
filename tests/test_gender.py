@@ -198,3 +198,50 @@ def test_an_exact_name_still_wins_over_a_near_twin(tmp_path: Path) -> None:
     path.write_text("Chixia\tf\nChisa\tm\n", encoding="utf-8")
 
     assert Speakers.load(path).gender_of("Chixia") == "f"
+
+
+def test_unknown_speaker_is_logged_for_later(tmp_path: Path) -> None:
+    table = tmp_path / "speakers.tsv"
+    table.write_text("Jinhsi\tf\n", encoding="utf-8")
+    unknown = tmp_path / "speakers-unknown.tsv"
+    speakers = Speakers.load(table, unknown_log=unknown)
+
+    speakers.gender_of("Qingxiao")
+
+    assert unknown.read_text(encoding="utf-8").splitlines() == ["qingxiao\t?"]
+
+
+def test_the_same_unknown_speaker_is_logged_once(tmp_path: Path) -> None:
+    table = tmp_path / "speakers.tsv"
+    table.write_text("Jinhsi\tf\n", encoding="utf-8")
+    unknown = tmp_path / "speakers-unknown.tsv"
+    speakers = Speakers.load(table, unknown_log=unknown)
+
+    speakers.gender_of("Qingxiao")
+    speakers.gender_of("Qingxiao ")
+    speakers.gender_of("Qingxiao")
+
+    assert unknown.read_text(encoding="utf-8").count("qingxiao") == 1
+
+
+def test_a_known_speaker_is_not_logged(tmp_path: Path) -> None:
+    table = tmp_path / "speakers.tsv"
+    table.write_text("Jinhsi\tf\n", encoding="utf-8")
+    unknown = tmp_path / "speakers-unknown.tsv"
+    speakers = Speakers.load(table, unknown_log=unknown)
+
+    speakers.gender_of("Jinhsi")
+
+    assert not unknown.exists()
+
+
+def test_ocr_noise_is_not_logged_as_a_speaker(tmp_path: Path) -> None:
+    table = tmp_path / "speakers.tsv"
+    table.write_text("Jinhsi\tf\n", encoding="utf-8")
+    unknown = tmp_path / "speakers-unknown.tsv"
+    speakers = Speakers.load(table, unknown_log=unknown)
+
+    speakers.gender_of("| . -")
+    speakers.gender_of("xy")
+
+    assert not unknown.exists()

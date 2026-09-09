@@ -15,6 +15,11 @@ WORD = re.compile(r"[^\W\d_]+", re.UNICODE)
 NAME_NOISE = re.compile(r"[^^\w\s']+", re.UNICODE)
 NAME_CUTOFF = 0.7
 NAME_MARGIN = 0.1
+MIN_LOGGED_NAME = 3
+
+
+def _is_plausible_name(name: str) -> bool:
+    return len(name.replace(" ", "")) >= MIN_LOGGED_NAME
 
 
 def clean_name(name: str) -> str:
@@ -24,13 +29,15 @@ def clean_name(name: str) -> str:
 
 
 class Speakers:
-    def __init__(self, table: dict[str, str]) -> None:
+    def __init__(self, table: dict[str, str], unknown_log: Path | None = None) -> None:
         self._table = table
+        self._unknown_log = unknown_log
+        self._logged: set[str] = set()
 
     @classmethod
-    def load(cls, path: Path) -> Speakers:
+    def load(cls, path: Path, unknown_log: Path | None = None) -> Speakers:
         if not path.is_file():
-            return cls({})
+            return cls({}, unknown_log)
         table: dict[str, str] = {}
         for line in path.read_text(encoding="utf-8").splitlines():
             stripped = line.strip()
@@ -43,7 +50,7 @@ class Speakers:
             gender = parts[1].strip().casefold()
             if name and gender in GENDER_TAGS:
                 table[name] = gender
-        return cls(table)
+        return cls(table, unknown_log)
 
     def gender_of(self, name: str) -> str:
         cleaned = clean_name(name)
@@ -60,10 +67,22 @@ class Speakers:
             reverse=True,
         )
         if not scored or scored[0][0] < NAME_CUTOFF:
+            self._note_unknown(cleaned)
             return ""
         if len(scored) > 1 and scored[0][0] - scored[1][0] < NAME_MARGIN:
+            self._note_unknown(cleaned)
             return ""
         return self._table[scored[0][1]]
+
+    def _note_unknown(self, cleaned: str) -> None:
+        if self._unknown_log is None or cleaned in self._logged:
+            return
+        if not _is_plausible_name(cleaned):
+            return
+        self._logged.add(cleaned)
+        self._unknown_log.parent.mkdir(parents=True, exist_ok=True)
+        with self._unknown_log.open("a", encoding="utf-8") as handle:
+            handle.write(f"{cleaned}\t?\n")
 
 
 def _is_nominative_noun(word: str, morph: Any) -> bool:
