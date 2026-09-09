@@ -28,5 +28,6 @@ plate_top = 0.798
 
 [hotkey]
 key = "Page_Up"
-refresh_key = "Home"
+refresh_key = "Page_Down"
+history_key = "Home"
 window_title = "Wuthering Waves"

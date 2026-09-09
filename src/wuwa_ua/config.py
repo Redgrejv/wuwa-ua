@@ -41,6 +41,7 @@ class Config:
     monitor_index: int
     hotkey_key: str
     hotkey_refresh_key: str
+    hotkey_history_key: str
     hotkey_window: str
     hotkey_window_title: str
     watch_process: str
@@ -135,7 +136,8 @@ def load_config(path: Path) -> Config:
         capture_source=source,
         monitor_index=int(capture.get("monitor_index", 1)),
         hotkey_key=str(hotkey.get("key", "Page_Up")),
-        hotkey_refresh_key=str(hotkey.get("refresh_key", "Home")),
+        hotkey_refresh_key=str(hotkey.get("refresh_key", "Page_Down")),
+        hotkey_history_key=str(hotkey.get("history_key", "Home")),
         hotkey_window=str(hotkey.get("window", "steam_app_3513350")),
         hotkey_window_title=str(hotkey.get("window_title", "Wuthering Waves")),
         watch_process=str(watch.get("process", "Wuthering Waves.exe")),

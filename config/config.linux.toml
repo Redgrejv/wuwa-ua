@@ -33,5 +33,6 @@ monitor = "DP-5"
 
 [hotkey]
 key = "Page_Up"
-refresh_key = "Home"
+refresh_key = "Page_Down"
+history_key = "Home"
 window = "steam_app_3513350"

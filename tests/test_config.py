@@ -517,7 +517,7 @@ def test_speaker_band_x_and_width_can_be_set(tmp_path: Path) -> None:
     assert config.speaker_width == 0.20
 
 
-def test_refresh_hotkey_defaults_to_home(tmp_path: Path) -> None:
+def test_refresh_and_history_hotkeys_have_defaults(tmp_path: Path) -> None:
     path = write(
         tmp_path,
         """
@@ -530,7 +530,10 @@ def test_refresh_hotkey_defaults_to_home(tmp_path: Path) -> None:
         """,
     )
 
-    assert load_config(path).hotkey_refresh_key == "Home"
+    config = load_config(path)
+
+    assert config.hotkey_refresh_key == "Page_Down"
+    assert config.hotkey_history_key == "Home"
 
 
 def test_refresh_hotkey_can_be_switched_off(tmp_path: Path) -> None:

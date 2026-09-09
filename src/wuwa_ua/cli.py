@@ -159,6 +159,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     bindings = {
         config.hotkey_key: lambda: pipeline.handle_command("toggle"),
         config.hotkey_refresh_key: lambda: pipeline.handle_command("refresh"),
+        config.hotkey_history_key: open_history_window,
     }
     hotkey: Any = None
     if any(bindings):
@@ -181,6 +182,21 @@ def cmd_watch(args: argparse.Namespace) -> int:
     watcher = GameWatcher(config.watch_process, [sys.executable, "-m", "wuwa_ua.cli", "run"])
     print(f"чекаю на процес гри: {config.watch_process}")
     watcher.loop()
+    return 0
+
+
+def open_history_window() -> None:
+    import subprocess
+
+    subprocess.Popen(
+        [sys.executable, "-m", "wuwa_ua.cli", "history"], start_new_session=True
+    )
+
+
+def cmd_settings(args: argparse.Namespace) -> int:
+    from wuwa_ua.display.settings_window import SettingsWindow
+
+    SettingsWindow(CONFIG_PATH).run()
     return 0
 
 
@@ -209,6 +225,7 @@ def main() -> int:
     )
     subparsers.add_parser("run", help="запустити переклад")
     subparsers.add_parser("watch", help="чекати на гру й запускати переклад разом із нею")
+    subparsers.add_parser("settings", help="налаштувати гарячі клавіші")
     history_parser = subparsers.add_parser("history", help="відкрити вікно з історією діалогу")
     history_parser.add_argument("--limit", type=int, default=500, help="скільки останніх реплік показати")
     for name in COMMANDS:
@@ -221,6 +238,8 @@ def main() -> int:
         return cmd_run(args)
     if args.command == "watch":
         return cmd_watch(args)
+    if args.command == "settings":
+        return cmd_settings(args)
     if args.command == "history":
         return cmd_history(args)
     return cmd_send(args)
