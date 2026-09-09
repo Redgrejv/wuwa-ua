@@ -612,3 +612,47 @@ def test_unknown_device_is_an_error(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigError, match="quantum"):
         load_config(path)
+
+
+def test_windows_defaults_are_present(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        """
+        [region]
+        monitor = "DP-4"
+        x = 0.0
+        y = 0.0
+        width = 1.0
+        height = 1.0
+        """,
+    )
+
+    config = load_config(path)
+
+    assert config.monitor_index == 1
+    assert config.hotkey_window_title == "Wuthering Waves"
+
+
+def test_windows_settings_can_be_changed(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        """
+        [region]
+        monitor = "DP-4"
+        x = 0.0
+        y = 0.0
+        width = 1.0
+        height = 1.0
+
+        [capture]
+        monitor_index = 2
+
+        [hotkey]
+        window_title = "Інша гра"
+        """,
+    )
+
+    config = load_config(path)
+
+    assert config.monitor_index == 2
+    assert config.hotkey_window_title == "Інша гра"

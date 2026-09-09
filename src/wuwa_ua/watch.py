@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
+import io
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -19,7 +22,32 @@ def read_cmdline(directory: Path) -> str:
     return raw.replace(b"\0", b" ").decode("utf-8", "replace").strip()
 
 
+def parse_tasklist(output: str, needle: str) -> list[int]:
+    target = needle.casefold()
+    pids: list[int] = []
+    for row in csv.reader(io.StringIO(output)):
+        if len(row) < 2 or row[0].casefold() != target:
+            continue
+        try:
+            pids.append(int(row[1]))
+        except ValueError:
+            continue
+    return sorted(pids)
+
+
+def windows_game_pids(needle: str) -> list[int]:
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True, check=True
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    return parse_tasklist(result.stdout, needle)
+
+
 def find_game_pids(proc_root: Path, needle: str) -> list[int]:
+    if sys.platform == "win32":
+        return windows_game_pids(needle)
     target = needle.casefold()
     pids: list[int] = []
     try:

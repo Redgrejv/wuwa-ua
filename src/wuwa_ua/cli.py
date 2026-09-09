@@ -7,12 +7,9 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from wuwa_ua.capture.portal import PortalCapture
 from wuwa_ua.config import load_config
 from wuwa_ua.control import COMMANDS, ControlServer, send_command
-from wuwa_ua.hotkey import HotkeyListener
 from wuwa_ua.watch import GameWatcher
-from wuwa_ua.display.window import WindowDisplay
 from wuwa_ua.gender import Speakers
 from wuwa_ua.ocr.tesseract import TesseractOcr
 from wuwa_ua.pipeline import Pipeline
@@ -23,16 +20,17 @@ from wuwa_ua.translate.nllb import NllbTranslator
 from wuwa_ua.translate.ollama import OllamaTranslator
 from wuwa_ua.types import Region
 
-CONFIG_PATH = Path.home() / ".config" / "wuwa-ua" / "config.toml"
-GLOSSARY_PATH = Path.home() / ".config" / "wuwa-ua" / "glossary.tsv"
-SPEAKERS_PATH = Path.home() / ".config" / "wuwa-ua" / "speakers.tsv"
-CACHE_PATH = Path.home() / ".local" / "share" / "wuwa-ua" / "cache.sqlite"
-HISTORY_PATH = Path.home() / ".local" / "share" / "wuwa-ua" / "history.jsonl"
+from wuwa_ua.paths import (
+    CACHE_PATH,
+    CONFIG_PATH,
+    GLOSSARY_PATH,
+    HISTORY_PATH,
+    SPEAKERS_PATH,
+    control_endpoint,
+)
 
 
-def socket_path() -> Path:
-    runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
-    return Path(runtime) / "wuwa-ua.sock"
+
 
 
 def build_morph() -> Any:
@@ -56,6 +54,8 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
         config = load_config(CONFIG_PATH)
         token = config.restore_token
         source = config.capture_source
+    from wuwa_ua.capture.portal import PortalCapture
+
     capture = PortalCapture(restore_token=token, source=source)
     capture.start()
     region = calibrate(capture, args.monitor)
@@ -66,8 +66,26 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def build_capture(config: Any) -> Any:
+    if sys.platform == "win32":
+        from wuwa_ua.capture.windows import MonitorCapture
+
+        return MonitorCapture(monitor_index=config.monitor_index)
+
+    from wuwa_ua.capture.portal import PortalCapture
+
+    return PortalCapture(restore_token=config.restore_token, source=config.capture_source)
+
+
 def build_display(config: Any) -> Any:
+    if sys.platform == "win32":
+        from wuwa_ua.display.overlay_windows import WindowsOverlayDisplay
+
+        return WindowsOverlayDisplay(region=config.region, plate_top=config.plate_top)
+
     if config.display_mode != "overlay":
+        from wuwa_ua.display.window import WindowDisplay
+
         return WindowDisplay(monitor=config.display_monitor)
 
     from wuwa_ua.display.overlay import OverlayDisplay
@@ -79,7 +97,21 @@ def build_display(config: Any) -> Any:
     )
 
 
+def build_hotkey(config: Any, bindings: dict[str, Any]) -> Any:
+    if sys.platform == "win32":
+        from wuwa_ua.hotkey_windows import WindowsHotkeyListener
+
+        return WindowsHotkeyListener(config.hotkey_window_title, bindings)
+
+    from wuwa_ua.hotkey import HotkeyListener
+
+    return HotkeyListener(config.hotkey_window, bindings)
+
+
 def relaunch_with_layer_shell(argv: list[str]) -> None:
+    if sys.platform == "win32":
+        return
+
     from wuwa_ua.display.overlay import find_layer_shell_library, needs_preload, preload_env
 
     library = find_layer_shell_library()
@@ -97,7 +129,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     if config.display_mode == "overlay":
         relaunch_with_layer_shell(sys.argv[1:])
 
-    capture = PortalCapture(restore_token=config.restore_token, source=config.capture_source)
+    capture = build_capture(config)
     capture.start()
 
     display = build_display(config)
@@ -120,16 +152,16 @@ def cmd_run(args: argparse.Namespace) -> int:
         ),
     )
 
-    server = ControlServer(socket_path(), pipeline.handle_command)
+    server = ControlServer(control_endpoint(), pipeline.handle_command)
     server.start()
 
     bindings = {
         config.hotkey_key: lambda: pipeline.handle_command("toggle"),
         config.hotkey_refresh_key: lambda: pipeline.handle_command("refresh"),
     }
-    hotkey: HotkeyListener | None = None
+    hotkey: Any = None
     if any(bindings):
-        hotkey = HotkeyListener(config.hotkey_window, bindings)
+        hotkey = build_hotkey(config, bindings)
         hotkey.start()
 
     threading.Thread(target=pipeline.run, daemon=True).start()
@@ -160,7 +192,7 @@ def cmd_history(args: argparse.Namespace) -> int:
 
 def cmd_send(args: argparse.Namespace) -> int:
     try:
-        print(send_command(socket_path(), args.command))
+        print(send_command(control_endpoint(), args.command))
     except ConnectionError as exc:
         print(exc, file=sys.stderr)
         return 1

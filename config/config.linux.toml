@@ -1,0 +1,37 @@
+[region]
+monitor = "DP-4"
+x = 0.235
+y = 0.815
+width = 0.53
+height = 0.107
+
+[capture]
+source = "window"
+restore_token = ""
+sample_fps = 4.0
+
+[detect]
+change_threshold = 3.0
+stable_frames = 2
+
+[ocr]
+min_confidence = 60.0
+
+[translate]
+backend = "nllb"
+model_path = "~/.local/share/wuwa-ua/models/nllb-1.3b"
+model = "gemma3:4b"
+host = "http://127.0.0.1:11434"
+timeout = 4.0
+context_lines = 3
+
+[display]
+mode = "overlay"
+clear_after = 1.5
+plate_top = 0.798
+monitor = "DP-5"
+
+[hotkey]
+key = "Page_Up"
+refresh_key = "Home"
+window = "steam_app_3513350"
