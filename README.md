@@ -31,10 +31,20 @@
 > Перевірено не було — код для Windows написано, але на живій системі не запускався.
 > Якщо щось не працює, це очікувано; пиши, полагоджу.
 
+Одна команда в PowerShell:
+
 ```powershell
-git clone https://github.com/Redgrejv/wuwa-ua.git
-cd wuwa-ua
-powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+irm https://raw.githubusercontent.com/Redgrejv/wuwa-ua/master/scripts/bootstrap.ps1 | iex
+```
+
+Скрипт склонує проєкт у `%LOCALAPPDATA%\Programs\wuwa-ua` і встановить усе потрібне. Повторний
+запуск тієї ж команди оновлює наявну копію.
+
+Поки репозиторій приватний, ця команда не працюватиме — GitHub не віддає сирі файли без
+автентифікації. До моменту відкриття став так:
+
+```powershell
+git clone https://github.com/Redgrejv/wuwa-ua.git; cd wuwa-ua; powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
 Скрипт зробить усе сам: перевірить Python 3.12+, поставить Tesseract через `winget`, створить
