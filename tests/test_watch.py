@@ -120,3 +120,36 @@ def test_running_reflects_the_game_process(tmp_path: Path) -> None:
     make_proc(tmp_path, 200, "Wuthering Waves.exe")
 
     assert watcher.running() is True
+
+
+TASKLIST = (
+    '"System Idle Process","0","Services","0","8 K"\r\n'
+    '"Wuthering Waves.exe","4242","Console","1","3,204,880 K"\r\n'
+    '"chrome.exe","1337","Console","1","120,000 K"\r\n'
+)
+
+
+def test_windows_tasklist_is_parsed() -> None:
+    from wuwa_ua.watch import parse_tasklist
+
+    assert parse_tasklist(TASKLIST, "Wuthering Waves.exe") == [4242]
+
+
+def test_windows_tasklist_matching_ignores_case() -> None:
+    from wuwa_ua.watch import parse_tasklist
+
+    assert parse_tasklist(TASKLIST, "wuthering waves.exe") == [4242]
+
+
+def test_windows_tasklist_without_the_game_is_empty() -> None:
+    from wuwa_ua.watch import parse_tasklist
+
+    assert parse_tasklist(TASKLIST, "notepad.exe") == []
+
+
+def test_windows_tasklist_ignores_broken_rows() -> None:
+    from wuwa_ua.watch import parse_tasklist
+
+    broken = '"Wuthering Waves.exe"\r\n"Wuthering Waves.exe","x","Console","1","1 K"\r\n'
+
+    assert parse_tasklist(broken, "Wuthering Waves.exe") == []

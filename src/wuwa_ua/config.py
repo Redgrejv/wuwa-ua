@@ -5,13 +5,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from wuwa_ua.paths import MODELS_PATH
 from wuwa_ua.types import Region
 
 DISPLAY_MODES = ("window", "overlay")
 CAPTURE_SOURCES = ("window", "monitor")
 BACKENDS = ("nllb", "ollama")
 DEVICES = ("cuda", "cpu")
-DEFAULT_MODEL_PATH = Path.home() / ".local/share/wuwa-ua/models/nllb-1.3b"
+DEFAULT_MODEL_PATH = MODELS_PATH / "nllb-1.3b"
 
 
 class ConfigError(Exception):
@@ -37,9 +38,11 @@ class Config:
     speaker_min_confidence: float
     display_monitor: str
     capture_source: str
+    monitor_index: int
     hotkey_key: str
     hotkey_refresh_key: str
     hotkey_window: str
+    hotkey_window_title: str
     watch_process: str
     backend: str
     model_path: Path
@@ -130,9 +133,11 @@ def load_config(path: Path) -> Config:
         speaker_min_confidence=float(speaker.get("min_confidence", 0.0)),
         display_monitor=str(display.get("monitor", "")),
         capture_source=source,
+        monitor_index=int(capture.get("monitor_index", 1)),
         hotkey_key=str(hotkey.get("key", "Page_Up")),
         hotkey_refresh_key=str(hotkey.get("refresh_key", "Home")),
         hotkey_window=str(hotkey.get("window", "steam_app_3513350")),
+        hotkey_window_title=str(hotkey.get("window_title", "Wuthering Waves")),
         watch_process=str(watch.get("process", "Wuthering Waves.exe")),
         backend=backend,
         model_path=Path(str(translate.get("model_path", DEFAULT_MODEL_PATH))).expanduser(),

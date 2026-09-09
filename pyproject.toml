@@ -2,10 +2,21 @@
 name = "wuwa-ua"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["ctranslate2", "numpy", "pytesseract", "python-xlib", "requests", "sentencepiece"]
+dependencies = [
+    "ctranslate2",
+    "numpy",
+    "opencv-python-headless",
+    "pymorphy3",
+    "pymorphy3-dicts-uk",
+    "pytesseract",
+    "requests",
+    "sentencepiece",
+]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+windows = ["mss", "pillow", "huggingface_hub", "pymorphy3", "pymorphy3-dicts-uk"]
+linux = ["pygobject", "pycairo", "python-xlib"]
 
 [project.scripts]
 wuwa-ua = "wuwa_ua.cli:main"

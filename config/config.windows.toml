@@ -1,0 +1,32 @@
+[region]
+monitor = "screen"
+x = 0.235
+y = 0.815
+width = 0.53
+height = 0.107
+
+[capture]
+monitor_index = 1
+sample_fps = 4.0
+
+[detect]
+change_threshold = 3.0
+stable_frames = 2
+
+[ocr]
+min_confidence = 60.0
+
+[translate]
+backend = "nllb"
+timeout = 4.0
+context_lines = 3
+
+[display]
+mode = "overlay"
+clear_after = 1.5
+plate_top = 0.798
+
+[hotkey]
+key = "Page_Up"
+refresh_key = "Home"
+window_title = "Wuthering Waves"
